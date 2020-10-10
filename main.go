@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type clientBuilder struct {
@@ -81,8 +82,98 @@ type Client interface {
 	Print()
 }
 
+// type project struct {
+// 	path string
+// }
+
+// type Project interface {
+// 	Put()
+// 	GetXml()
+// 	GetJson()
+// 	Delete()
+// 	FromXmlFile()
+// 	FromBytes()
+// }
+
+type requestBuilder struct {
+	context context.Context
+	path    string
+	options []string
+	method  string
+}
+
+type request struct {
+	req     *http.Request
+	path    string
+	options string
+	method  string
+}
+
+func (rb *requestBuilder) Context(context context.Context) RequestBuilder {
+	rb.context = context
+	return rb
+}
+
+func (rb *requestBuilder) Path(path string) RequestBuilder {
+	rb.path = path
+	return rb
+}
+
+func (rb *requestBuilder) Option(option string) RequestBuilder {
+	rb.options = append(rb.options, option)
+	return rb
+}
+
+func (rb *requestBuilder) Method(method string) RequestBuilder {
+	rb.method = method
+	return rb
+}
+
+func (rb *requestBuilder) Build() Request {
+
+	opts := strings.Join(rb.options, "&")
+
+	paths := strings.Builder{}
+	paths.WriteString("?")
+	paths.WriteString(opts)
+	return &request{
+		path:    paths.String(),
+		options: opts,
+		method:  rb.method,
+	}
+}
+
+type Request interface {
+	New(string) *http.Request
+	Print()
+}
+
+func (r *request) New(url string) *http.Request {
+	urlBuilder := strings.Builder{}
+	urlBuilder.WriteString(url)
+	urlBuilder.WriteString(r.path)
+
+	req, _ := http.NewRequest(r.method, urlBuilder.String(), nil)
+	return req
+}
+
+func (r *request) Print() {
+	fmt.Println(r.path)
+}
+
+type RequestBuilder interface {
+	Context(context.Context) RequestBuilder
+	Path(string) RequestBuilder
+	Option(string) RequestBuilder
+	Build() Request
+}
+
 func New() ClientBuilder {
 	return &clientBuilder{}
+}
+
+func NewRequest() RequestBuilder {
+	return &requestBuilder{}
 }
 
 func main() {
@@ -94,4 +185,14 @@ func main() {
 		Build()
 
 	client.Print()
+
+	request := NewRequest()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	newrequest := request.Context(ctx).Path("/projects/ppsd").
+		Option("start=true").
+		Option("format=csv").
+		Build()
+
+	newrequest.Print()
 }
