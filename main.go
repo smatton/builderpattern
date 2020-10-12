@@ -178,21 +178,25 @@ func NewRequest() RequestBuilder {
 
 func main() {
 
-	builder := New()
-
-	client := builder.Host("localhost").
+	client := New().
+		Host("localhost").
 		Port(9910).
 		Build()
 
+	// client := builder.Host("localhost").
+	// 	Port(9910).
+	// 	Build()
+
 	client.Print()
 
-	request := NewRequest()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	newrequest := request.Context(ctx).Path("/projects/ppsd").
+	request := NewRequest().
+		Context(ctx).
+		Path("/projects/ppds").
 		Option("start=true").
 		Option("format=csv").
 		Build()
 
-	newrequest.Print()
+	request.Print()
 }
